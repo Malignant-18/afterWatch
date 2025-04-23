@@ -3,28 +3,29 @@
     "name": "afterWatch",
     "slug": "afterWatch",
     "version": "1.0.0",
-
+    "scheme": "afterwatch",
     "web": {
+      "bundler": "metro",
       "favicon": "./assets/favicon.png"
     },
-
     "experiments": {
       "tsconfigPaths": true
     },
-
-    "plugins": [],
-
+    "plugins": [
+      "expo-secure-store",
+      "expo-sqlite"
+    ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-
     "userInterfaceStyle": "light",
-
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true
     },
@@ -32,7 +33,26 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ],
+          "data": {
+            "scheme": "afterwatch"
+          }
+        }
+      ],
+      "package": "com.itsjover.afterWatch"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "d33d14e7-cf2c-4914-8cdf-ccf782859783"
       }
-    }
+    },
+    "owner": "itsjover"
   }
 }
