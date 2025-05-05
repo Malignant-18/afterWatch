@@ -1,40 +1,36 @@
-// app/screens/Redirect.tsx
-import { useNavigation, useRoute } from '@react-navigation/native';
+import * as Notifications from 'expo-notifications';
 import React, { useEffect } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { Button, Text, View } from 'react-native';
 
-const RedirectScreen = () => {
-  
-  
-
+const Profile = () => {
   useEffect(() => {
-    // The actual token exchange is handled by AuthSession
-    // We just need to show a loading state and navigate to the main screen
-      setTimeout(() => {
-        console.log('in profile timeout 10s')
-    }, 10000);
+    console.log('in useeffect of profile');
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+      }),
+    });
   }, []);
 
+  const setNotif = async () => {
+    console.log('notification send');
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'John DS is on Instagram',
+        body: 'Click here to follow him',
+      },
+      trigger: null, // shows immediately
+    });
+  };
+
   return (
-    <View style={styles.container}>
-      <ActivityIndicator size="large" color="#ED1C24" />
-      <Text style={styles.text}>Completing login...</Text>
+    <View style={{ padding: 20 }}>
+      <Text>Notification Demo</Text>
+      <Button title="Click here for notif" onPress={setNotif} />
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#121212',
-  },
-  text: {
-    color: 'white',
-    marginTop: 20,
-    fontSize: 16,
-  },
-});
-
-export default RedirectScreen;
+export default Profile; // ✅ FIXED

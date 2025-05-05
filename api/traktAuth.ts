@@ -1,32 +1,24 @@
-// TraktAuth.ts
 import * as AuthSession from 'expo-auth-session';
 import * as SecureStore from 'expo-secure-store';
 import * as WebBrowser from 'expo-web-browser';
-
-// This line is critical - add it at the top of your file
+const DEBUG = true;
 WebBrowser.maybeCompleteAuthSession();
 
-// Define your Trakt API credentials - store these in your environment variables
 const TRAKT_CLIENT_ID = process.env.EXPO_PUBLIC_CLIENT_ID!;
 const TRAKT_CLIENT_SECRET = process.env.EXPO_PUBLIC_CLIENT_SECRET!;
 
-// Define the redirect URL with afterWatch scheme
 export const redirectUri = AuthSession.makeRedirectUri({
-  scheme: 'afterwatch', // Using your app name as the scheme
+  scheme: 'afterwatch',
   path: 'redirect',
 });
 
 console.log(`in traktAuth  redirectUri: ${redirectUri}`);
-// Trakt API endpoints - using the ones you provided
-const TRAKT_API = {
+export const TRAKT_API = {
   BASE_URL: 'https://api.trakt.tv',
   AUTHORIZE_URL: 'https://api.trakt.tv/oauth/authorize',
   TOKEN_URL: 'https://private-60ba13-trakt.apiary-mock.com/oauth/token',
 };
 
-// Define what data we want to access
-
-// Storage keys for secure storage
 const STORAGE_KEYS = {
   ACCESS_TOKEN: 'trakt_access_token',
   REFRESH_TOKEN: 'trakt_refresh_token',
@@ -38,21 +30,16 @@ interface AuthTokens {
   refreshToken: string;
   expiresIn: number;
 }
-// Add this near the top of your TraktAuth.ts file
-const DEBUG = true;
 
 export const loginWithTrakt = async (): Promise<boolean> => {
   try {
     if (DEBUG) console.log('Starting Trakt auth...');
 
-    // Generate random state for security
     const state = Math.random().toString(36).substring(2, 15);
     if (DEBUG) console.log('Generated state:', state);
 
-    // Log the redirect URI being used
     if (DEBUG) console.log('Using redirect URI:', redirectUri);
 
-    // Configure the authentication request
     const authRequest = new AuthSession.AuthRequest({
       clientId: TRAKT_CLIENT_ID,
       redirectUri,
@@ -62,7 +49,6 @@ export const loginWithTrakt = async (): Promise<boolean> => {
 
     if (DEBUG) console.log('Created auth request, starting promptAsync...');
 
-    // The important change is here
     const result = await authRequest.promptAsync(
       {
         authorizationEndpoint: TRAKT_API.AUTHORIZE_URL,
@@ -80,7 +66,6 @@ export const loginWithTrakt = async (): Promise<boolean> => {
       if (DEBUG) console.log('Got code:', code?.substring(0, 4) + '...');
       if (DEBUG) console.log('Returned state:', returnedState);
 
-      // Verify state to prevent CSRF attacks
       if (state !== returnedState) {
         console.error('State mismatch! Expected:', state, 'Got:', returnedState);
         throw new Error('Invalid state returned');
@@ -88,12 +73,10 @@ export const loginWithTrakt = async (): Promise<boolean> => {
 
       if (DEBUG) console.log('Exchanging code for token...');
 
-      // Exchange code for tokens
       const tokens = await exchangeCodeForToken(code, authRequest.codeVerifier!);
 
       if (DEBUG) console.log('Got tokens, storing...');
 
-      // Store tokens securely
       await storeTokens(tokens);
 
       if (DEBUG) console.log('Auth flow completed successfully!');
@@ -240,29 +223,4 @@ export const logout = async (): Promise<void> => {
   await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
   await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
   await SecureStore.deleteItemAsync(STORAGE_KEYS.EXPIRY_DATE);
-};
-
-// Example API call function
-export const fetchTraktData = async (endpoint: string): Promise<any> => {
-  const accessToken = await getAccessToken();
-
-  if (!accessToken) {
-    throw new Error('Not authenticated');
-  }
-
-  const response = await fetch(`${TRAKT_API.BASE_URL}/${endpoint}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-      'trakt-api-version': '2',
-      'trakt-api-key': TRAKT_CLIENT_ID,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`API request failed: ${response.statusText}`);
-  }
-
-  return response.json();
 };

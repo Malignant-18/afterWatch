@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "afterWatch",
-    "slug": "afterWatch",
+    "slug": "afterwatch",
     "version": "1.0.0",
     "scheme": "afterwatch",
     "web": {
@@ -50,7 +50,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "d33d14e7-cf2c-4914-8cdf-ccf782859783"
+        "projectId": "7bb4f51e-50b7-46e3-b982-64b67f426adc"
       }
     },
     "owner": "itsjover"

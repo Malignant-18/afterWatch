@@ -1,10 +1,10 @@
 export type TraktHistoryItem = TraktHistoryMovie | TraktHistoryEpisode;
 
 interface TraktHistoryBase {
-  id: number; // trakt history item id
-  watched_at: string; // ISO timestamp
-  action: string; // 'watch', 'scrobble', etc.
-  type: 'movie' | 'episode'; // used to discriminate the union
+  id: number;
+  watched_at: string;
+  type: 'movie' | 'episode';
+  action?: string; // Made optional
 }
 
 // Movie type
@@ -12,12 +12,12 @@ export interface TraktHistoryMovie extends TraktHistoryBase {
   type: 'movie';
   movie: {
     title: string;
-    year: number;
+    year?: number; // Made optional
     ids: {
       trakt: number;
-      slug: string;
-      imdb: string;
-      tmdb: number;
+      slug?: string; // Made optional
+      imdb?: string;
+      tmdb?: number;
     };
   };
 }
@@ -31,22 +31,18 @@ export interface TraktHistoryEpisode extends TraktHistoryBase {
     title: string;
     ids: {
       trakt: number;
-      tvdb: number;
-      imdb: string;
-      tmdb: number;
-      tvrage: number | null;
+      imdb?: string;
+      tmdb?: number;
     };
   };
   show: {
     title: string;
-    year: number;
+    year?: number; // Optional
     ids: {
       trakt: number;
-      slug: string;
-      tvdb: number;
-      imdb: string;
-      tmdb: number;
-      tvrage: number | null;
+      slug?: string; // Optional
+      imdb?: string;
+      tmdb?: number;
     };
   };
 }

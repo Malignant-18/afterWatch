@@ -3,9 +3,9 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getAccessToken, redirectUri } from 'api/traktAuth';
 import LoginTrakt from 'components/loginTrakt';
 import * as Linking from 'expo-linking';
+import * as Notifications from 'expo-notifications';
 import React, { useEffect, useState } from 'react';
 import { View, Text, Button } from 'react-native';
-
 export type RootStackParamList = {
   Landing: undefined;
   Redirect: undefined;
@@ -16,6 +16,12 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Landing'>;
 
 const DEBUG = true;
 
+const requestNotifPerm = async () => {
+  const { status } = await Notifications.getPermissionsAsync();
+  if (status !== 'granted') {
+    await Notifications.requestPermissionsAsync();
+  }
+};
 export default function Landing() {
   const navigation = useNavigation<NavigationProp>();
   const [logged, setLogged] = useState(false);
@@ -28,7 +34,9 @@ export default function Landing() {
       });
     }
   }, []);
-
+  useEffect(() => {
+    requestNotifPerm();
+  }, []);
   useEffect(() => {
     const checkLoginStatus = async () => {
       if (DEBUG) console.log('Checking login status...');
@@ -44,7 +52,7 @@ export default function Landing() {
       setLoading(false); // done checking
     };
 
-    if (DEBUG) {
+    if (!DEBUG) {
       checkLoginStatus();
     } else {
       setLoading(false); // don't check, allow debug access
