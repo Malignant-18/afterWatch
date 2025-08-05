@@ -3,6 +3,7 @@
 export type TraktRatingItem = TraktRatingMovie | TraktRatingShow | TraktRatingEpisode;
 
 interface TraktRatingBase {
+  ref_id: number;
   rated_at: string;
   rating: number;
   type: 'movie' | 'show' | 'episode';

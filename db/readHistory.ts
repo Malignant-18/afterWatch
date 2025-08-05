@@ -13,13 +13,7 @@ export const readHistory = async (): Promise<TraktHistoryItem[]> => {
 
   try {
     const result = await db.getAllAsync(selectQuery);
-    const fnfn = {
-      episode: { ids: [Object], number: 5, season: 1, title: 'Maya' },
-      id: 10788534072,
-      show: { ids: [Object], title: 'Echo' },
-      type: 'episode',
-      watched_at: '2025-04-23T07:10:01.000Z',
-    };
+    console.log('result from db                         :', result);
     const history: TraktHistoryItem[] = result.map((row: any) => {
       const base = {
         id: parseInt(row.ref_id, 10),

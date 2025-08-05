@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from 'react-native';
 
-import { loginWithTrakt } from '../api/traktAuth';
+import { loginWithTrakt } from '../auth/traktAuth';
 
 type LoginTraktProps = {
   title: string;

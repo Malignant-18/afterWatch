@@ -8,9 +8,10 @@ export const insertRatings = async (ratings: TraktRatingItem[]): Promise<void> =
 
   const insertQuery = `
     INSERT INTO ratings (
+    ref_id ,
       type, rating, rated_at, show_title, title, season, episode, trakt_id, 
-      imdb_id, tmdb_id, tvdb_id, slug
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+      slug
+    ) VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?);
   `;
 
   console.log('in insertRatings before transaction');
@@ -44,6 +45,7 @@ export const insertRatings = async (ratings: TraktRatingItem[]): Promise<void> =
       }
 
       await db.runAsync(insertQuery, [
+        traktId,
         item.type,
         item.rating,
         item.rated_at,

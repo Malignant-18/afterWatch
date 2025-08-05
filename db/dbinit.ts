@@ -15,7 +15,7 @@ export const initDatabase = async (): Promise<void> => {
     -- 📘 1. Watched History
     CREATE TABLE IF NOT EXISTS watched_history (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      ref_id TEXT NOT NULL,
+      ref_id INTEGER NOT NULL,
       type TEXT NOT NULL,
       watched_at TEXT NOT NULL,
       show_title TEXT,
@@ -29,6 +29,7 @@ export const initDatabase = async (): Promise<void> => {
     -- ⭐ 2. Ratings
     CREATE TABLE IF NOT EXISTS ratings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ref_id INTEGER NOT NULL,
       type TEXT NOT NULL,
       rating INTEGER NOT NULL,
       rated_at TEXT NOT NULL,
@@ -37,16 +38,13 @@ export const initDatabase = async (): Promise<void> => {
       season INTEGER,
       episode INTEGER,
       trakt_id INTEGER,
-      imdb_id TEXT,
-      tmdb_id INTEGER,
-      tvdb_id INTEGER,
       slug TEXT
     );
 
     -- 🔔 3. Notification Queue
     CREATE TABLE IF NOT EXISTS notification_queue (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      ref_id TEXT NOT NULL,
+      ref_id INTEGER NOT NULL,
       type TEXT NOT NULL,
       watched_at TEXT NOT NULL,
       title TEXT NOT NULL,
@@ -54,9 +52,6 @@ export const initDatabase = async (): Promise<void> => {
       season INTEGER,
       episode INTEGER,
       trakt_id INTEGER,
-      imdb_id TEXT,
-      tmdb_id INTEGER,
-      tvdb_id INTEGER,
       slug TEXT,
 
       status TEXT DEFAULT 'unseen',
@@ -87,6 +82,12 @@ export const deleteDB = async () => {
   } catch (Error) {
     console.log('error deleteing db ::' + Error);
   }
+  try {
+    await db.runAsync('DELETE FROM notification_queue');
+    console.log('deletion syccessful');
+  } catch (error) {
+    console.log('error deleteing db ::' + error);
+  }
 };
 
 export const resetDatabase = async (): Promise<boolean> => {
@@ -96,6 +97,7 @@ export const resetDatabase = async (): Promise<boolean> => {
     // Drop existing tables
     await db.execAsync('DROP TABLE IF EXISTS ratings');
     await db.execAsync('DROP TABLE IF EXISTS watched_history');
+    await db.execAsync('DROP TABLE IF EXISTS notification_queue');
     console.log('Database tables dropped successfully');
     return true;
   } catch (error) {

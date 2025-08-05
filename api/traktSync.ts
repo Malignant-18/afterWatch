@@ -5,7 +5,7 @@ import { readRatings } from 'db/readRating';
 import { TraktHistoryItem } from 'interfaces/interface_history';
 import { TraktRatingItem } from 'interfaces/interface_rating';
 
-import { getAccessToken, TRAKT_API } from './traktAuth';
+import { getAccessToken, TRAKT_API } from '../auth/traktAuth';
 
 const TRAKT_CLIENT_ID = process.env.EXPO_PUBLIC_CLIENT_ID!;
 

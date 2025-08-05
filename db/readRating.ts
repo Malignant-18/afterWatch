@@ -12,11 +12,12 @@ export const readRatings = async (): Promise<TraktRatingItem[]> => {
   const db: SQLiteDatabase = await openDatabase();
   console.log('opened Db starting read ratings from db');
   const selectQuery = `SELECT * FROM ratings ORDER BY rated_at DESC;`;
-
   try {
     const result = await db.getAllAsync(selectQuery);
+    console.log('result from db                              :', result);
     const ratings: TraktRatingItem[] = result.map((row: any) => {
       const base = {
+        ref_id: row.ref_id,
         rating: row.rating,
         rated_at: row.rated_at,
         type: row.type,
@@ -31,8 +32,6 @@ export const readRatings = async (): Promise<TraktRatingItem[]> => {
             ids: {
               trakt: row.trakt_id || 0,
               slug: row.slug || '',
-              imdb: '',
-              tmdb: 0,
             },
           },
         } as TraktRatingMovie;
@@ -46,10 +45,6 @@ export const readRatings = async (): Promise<TraktRatingItem[]> => {
             ids: {
               trakt: row.trakt_id || 0,
               slug: row.slug || '',
-              tvdb: 0,
-              imdb: '',
-              tmdb: 0,
-              tvrage: null,
             },
           },
         } as TraktRatingShow;
@@ -63,10 +58,6 @@ export const readRatings = async (): Promise<TraktRatingItem[]> => {
             number: row.episode || 0,
             ids: {
               trakt: row.trakt_id || 0,
-              tvdb: 0,
-              imdb: '',
-              tmdb: 0,
-              tvrage: null,
             },
           },
           show: {
@@ -75,10 +66,6 @@ export const readRatings = async (): Promise<TraktRatingItem[]> => {
             ids: {
               trakt: 0, // We don't have show trakt_id for episodes
               slug: '',
-              tvdb: 0,
-              imdb: '',
-              tmdb: 0,
-              tvrage: null,
             },
           },
         } as TraktRatingEpisode;

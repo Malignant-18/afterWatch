@@ -21,20 +21,22 @@ export const insertHistory = async (history: TraktHistoryItem[]): Promise<void> 
       let title = '';
       let season = null;
       let episode = null;
+      let traktId = null;
 
       if (item.type === 'movie') {
         title = item.movie.title;
+        traktId = item.movie.ids.trakt;
       } else if (item.type === 'episode') {
         title = item.episode.title;
         showTitle = item.show?.title ?? '';
         season = item.episode.season;
         episode = item.episode.number;
+        traktId = item.episode.ids.trakt;
       }
-
       const ids = item.type === 'movie' ? item.movie.ids : item.episode.ids;
 
       await db.runAsync(insertQuery, [
-        item.id.toString(), // ref_id
+        traktId,
         item.type,
         item.watched_at,
         showTitle,

@@ -1,32 +1,18 @@
-// app/screens/Redirect.tsx
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useEffect } from 'react';
-import { View, Text } from 'react-native';
+import { useRoute } from '@react-navigation/native';
+import EpisodeDetail from 'app/screens/details/EpisodeDetail';
+import EpisodeGroup from 'app/screens/details/EpisodeGroup';
+import MovieDetail from 'app/screens/details/MovieDetail';
 
-export type RootStackParamList = {
-  Landing: undefined;
-  Redirect: undefined;
-  Main: undefined;
+type RouteParams = {
+  type: 'movie' | 'episode' | 'episode_group';
+  trakt_id: number;
 };
 
-type RedirectScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Redirect'>;
+export default function Redirect() {
+  const route = useRoute();
+  const { type, trakt_id } = route.params as RouteParams;
 
-const Redirect = () => {
-  const navigation = useNavigation<RedirectScreenNavigationProp>(); // 👈 Typed nav
-
-  useEffect(() => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Main' }], // ✅ Now this is properly typed
-    });
-  }, []);
-
-  return (
-    <View>
-      <Text>Logging you in...</Text>
-    </View>
-  );
-};
-
-export default Redirect;
+  if (type === 'episode_group') return <EpisodeGroup show_id={trakt_id} />;
+  if (type === 'movie') return <MovieDetail trakt_id={trakt_id} />;
+  return <EpisodeDetail trakt_id={trakt_id} />;
+}
