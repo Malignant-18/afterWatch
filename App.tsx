@@ -49,7 +49,7 @@ Notifications.setNotificationHandler({
         shouldSetBadge: true,
     }),
 });
-const DEBUG_FORCE_LOGIN = false;
+const DEBUG_FORCE_LOGIN = true;
 export default function App() {
     const [fontsLoaded, setFontsLoaded] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
