@@ -1,35 +1,53 @@
 import { Feather } from '@expo/vector-icons';
-import { getAccessToken } from 'auth/traktAuth';
+import { getAccessToken } from 'auth/traktAuth'; // Assuming this is a utility you have
 import React, { useEffect, useState } from 'react';
-import { View, Dimensions, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
+import { View, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
 import { ContributionGraph } from 'react-native-chart-kit';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
-// Updated chartConfig to use colors from your tailwind.config.js
+// Chart configuration with added label styling
 const chartConfig = {
-    backgroundGradientFrom: '#170c09', // Matching your dark-700 theme color
-    backgroundGradientTo: '#170c09', // Matching your dark-700 theme color
-    color: (opacity = 1) => `rgba(210, 141, 45, ${opacity})`, // accent color
+    backgroundGradientFrom: '#170c09',
+    backgroundGradientTo: '#170c09',
+    color: (opacity = 1) => `rgba(210, 141, 45, ${opacity})`,
     strokeWidth: 0,
+    propsForLabels: {
+        fontSize: 10,
+        fill: '#A3A3A3', // A light gray for month labels
+    },
 };
 
-const formatDateRange = (endDate: any) => {
-    const options = { month: 'short', year: 'numeric' };
-    const end = endDate.toLocaleDateString('en-US', options);
+/**
+ * Formats the date range label for a 4-month period.
+ */
+const formatDateRange = (refDate: Date): string => {
+    const year = refDate.getFullYear();
+    const month = refDate.getMonth(); // 0-11
 
-    const startDate = new Date(endDate);
-    startDate.setMonth(startDate.getMonth() - 6);
-    const start = startDate.toLocaleDateString('en-US', options as Intl.DateTimeFormatOptions);
+    if (month < 4) return `Jan ${year} - Apr ${year}`;
+    if (month < 8) return `May ${year} - Aug ${year}`;
+    return `Sep ${year} - Dec ${year}`;
+};
 
-    return `${start} - ${end}`;
+/**
+ * Calculates the exact end date for the 4-month contribution graph period.
+ */
+const getPeriodEndDate = (refDate: Date): Date => {
+    const year = refDate.getFullYear();
+    const month = refDate.getMonth();
+
+    if (month < 4) return new Date(year, 3, 30); // Apr 30
+    if (month < 8) return new Date(year, 7, 31); // Aug 31
+    return new Date(year, 11, 31); // Dec 31
 };
 
 export const HeatMap = () => {
     const [periodData, setPeriodData] = useState<{ date: string; count: number }[]>([]);
     const [loading, setLoading] = useState(true);
-    const [endDate, setEndDate] = useState(new Date());
+    const [referenceDate, setReferenceDate] = useState(new Date());
     const [totalInPeriod, setTotalInPeriod] = useState(0);
+    const [containerWidth, setContainerWidth] = useState(0);
 
     useEffect(() => {
         const fetchHeatmapForPeriod = async () => {
@@ -37,13 +55,17 @@ export const HeatMap = () => {
             const access_token = (await getAccessToken()) ?? '';
             const trakt_uuid = '3cb06afae6d4bac05d951e3e6895d4650d6e369c';
 
-            // Format date as YYYY-MM-DD for the API query
-            const endDateString = endDate.toISOString().split('T')[0];
+            const year = referenceDate.getFullYear();
+            const month = referenceDate.getMonth();
+
+            // Determine which third of the year we are in
+            let third;
+            if (month < 4) third = 1;
+            else if (month < 8) third = 2;
+            else third = 3;
 
             try {
-                // The API now takes an endDate to paginate by 6-month periods
-                // This assumes your backend is updated to handle this query parameter
-                const res = await fetch(`${API_URL}/api/heatmap?endDate=${endDateString}`, {
+                const res = await fetch(`${API_URL}/api/heatmap?year=${year}&third=${third}`, {
                     headers: {
                         'Content-Type': 'application/json',
                         'trakt-api-version': '2',
@@ -73,46 +95,62 @@ export const HeatMap = () => {
             }
         };
 
-        fetchHeatmapForPeriod();
-    }, [endDate]); // This effect re-runs whenever the endDate changes
+        if (containerWidth > 0) {
+            fetchHeatmapForPeriod();
+        }
+    }, [referenceDate, containerWidth]);
 
     const handlePrevious = () => {
-        const newEndDate = new Date(endDate);
-        newEndDate.setMonth(newEndDate.getMonth() - 6);
-        setEndDate(newEndDate);
+        const newRefDate = new Date(referenceDate);
+        newRefDate.setMonth(newRefDate.getMonth() - 4); // Navigate by 4 months
+        setReferenceDate(newRefDate);
     };
 
     const handleNext = () => {
-        const newEndDate = new Date(endDate);
-        newEndDate.setMonth(newEndDate.getMonth() + 6);
-        // Prevent navigating into the future
-        if (newEndDate >= new Date()) {
-            setEndDate(new Date());
-        } else {
-            setEndDate(newEndDate);
+        const newRefDate = new Date(referenceDate);
+        newRefDate.setMonth(newRefDate.getMonth() + 4); // Navigate by 4 months
+        if (newRefDate <= new Date()) {
+            setReferenceDate(newRefDate);
         }
     };
 
-    // Disable the 'next' button if we are at the current date or in the future
-    const isNextDisabled = endDate.getTime() >= new Date().getTime();
+    const nextPeriodDate = new Date(referenceDate);
+    nextPeriodDate.setMonth(nextPeriodDate.getMonth() + 4);
+    const isNextDisabled = nextPeriodDate > new Date();
 
-    if (loading) {
+    // --- Dynamic Sizing for 4 months ---
+    const numDays = 122; // Approx 4 months
+    const numWeeks = Math.ceil(numDays / 7);
+    const gutterSize = 2;
+    const monthLabelSpacing = 25;
+
+    const calculatedSquareSize =
+        containerWidth > 0
+            ? (containerWidth - monthLabelSpacing - (numWeeks - 1) * gutterSize) / numWeeks
+            : 0;
+
+    if (loading || containerWidth === 0) {
         return (
-            <View className="flex h-56 items-center justify-center rounded-xl bg-dark-700">
+            <View
+                className="h-56 items-center justify-center rounded-b-2xl bg-dark-700"
+                onLayout={(event) => setContainerWidth(event.nativeEvent.layout.width)}>
                 <ActivityIndicator size="large" color="#D28D2D" />
             </View>
         );
     }
 
     return (
-        <View className="rounded-xl bg-dark-700 p-4">
-            {/* Header with Navigation */}
-            <View className="mb-2 flex-row items-center justify-between">
+        <View
+            className="rounded-b-2xl bg-dark-700 py-4"
+            onLayout={(event) => {
+                if (containerWidth === 0) setContainerWidth(event.nativeEvent.layout.width);
+            }}>
+            <View className="mb-2 flex-row items-center justify-between px-4">
                 <TouchableOpacity onPress={handlePrevious} className="p-2">
                     <Feather name="chevron-left" size={20} color="#FBF7F3" />
                 </TouchableOpacity>
                 <Text className="text-base font-semibold text-light-200">
-                    {formatDateRange(endDate)}
+                    {formatDateRange(referenceDate)}
                 </Text>
                 <TouchableOpacity onPress={handleNext} disabled={isNextDisabled} className="p-2">
                     <Feather
@@ -122,22 +160,23 @@ export const HeatMap = () => {
                     />
                 </TouchableOpacity>
             </View>
-            <Text className="mb-2 text-center text-sm font-semibold text-light-200/80">
+            <Text className="mb-2 px-4 text-center text-sm font-semibold text-light-200/80">
                 {`${totalInPeriod} contributions in this period`}
             </Text>
 
-            {/* Contribution Graph */}
-            <ContributionGraph
-                values={periodData}
-                endDate={endDate}
-                numDays={183} // Approx 6 months
-                width={Dimensions.get('window').width - 40}
-                height={220}
-                chartConfig={chartConfig}
-                squareSize={16}
-                gutterSize={2}
-                tooltipDataAttrs={() => ({})}
-            />
+            {containerWidth > 0 && (
+                <ContributionGraph
+                    values={periodData}
+                    endDate={getPeriodEndDate(referenceDate)}
+                    numDays={numDays}
+                    width={containerWidth}
+                    height={220}
+                    chartConfig={chartConfig}
+                    squareSize={16}
+                    gutterSize={gutterSize}
+                    tooltipDataAttrs={() => ({})}
+                />
+            )}
         </View>
     );
 };

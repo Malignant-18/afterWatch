@@ -5,6 +5,7 @@ import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useState } from 'react';
 import { SheetProvider } from 'react-native-actions-sheet';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 
@@ -49,16 +50,16 @@ Notifications.setNotificationHandler({
         shouldSetBadge: true,
     }),
 });
-const DEBUG_FORCE_LOGIN = true;
+const DEBUG_FORCE_LOGIN = false;
 export default function App() {
     const [fontsLoaded, setFontsLoaded] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isAuthLoading, setIsAuthLoading] = useState(true);
 
-    useNotificationListeners(); // Foreground + background/tap listeners
+    useNotificationListeners();
     console.log('[App.tsx]Starting App');
     useEffect(() => {
-        initializePushToken(); // Securely fetch/store expo token on first app load
+        initializePushToken();
     }, []);
 
     useEffect(() => {
@@ -83,11 +84,11 @@ export default function App() {
             // Check the DEBUG flag here
             if (DEBUG_FORCE_LOGIN) {
                 console.log('DEBUG MODE: Forcing login screen.');
-                setIsAuthLoading(false); // We're done "loading" auth status
+                setIsAuthLoading(false);
                 await SplashScreen.hideAsync();
             } else {
                 console.log('PRODUCTION MODE: Checking for existing token.');
-                await checkLoginStatus(); // Normal behavior
+                await checkLoginStatus();
             }
         };
 
@@ -95,17 +96,19 @@ export default function App() {
     }, []);
 
     if (!fontsLoaded || isAuthLoading) {
-        return null; // Show splash screen while loading fonts and checking auth
+        return null;
     }
 
     return (
-        <SafeAreaProvider>
-            <SheetProvider>
-                <NavigationContainer linking={linking}>
-                    <RootNavigator isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
-                </NavigationContainer>
-                <Toast config={toastConfig} position="bottom" bottomOffset={10} />
-            </SheetProvider>
-        </SafeAreaProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <SafeAreaProvider>
+                <SheetProvider>
+                    <NavigationContainer linking={linking}>
+                        <RootNavigator isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
+                    </NavigationContainer>
+                    <Toast config={toastConfig} position="bottom" bottomOffset={10} />
+                </SheetProvider>
+            </SafeAreaProvider>
+        </GestureHandlerRootView>
     );
 }

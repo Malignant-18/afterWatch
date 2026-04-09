@@ -2,7 +2,8 @@
 import { getAccessToken } from 'auth/traktAuth';
 import { CommentMovieProps, CommentEpisodeProps, CommentShowProps } from 'types/comment';
 
-const baseUrl = process.env.EXPO_PUBLIC_TRAKT_BASE_URL!;
+import traktInstance from '../axios/traktInstance';
+
 const clientId = process.env.EXPO_PUBLIC_CLIENT_ID!;
 
 export const fetchTraktComments = async (
@@ -14,41 +15,43 @@ export const fetchTraktComments = async (
     let endpoint = '';
 
     switch (mediaType) {
-        case 'episode':
+        case 'episode': {
             const epProps = props as CommentEpisodeProps;
             endpoint = `shows/${epProps.show_slug}/seasons/${epProps.season}/episodes/${epProps.episode}/comments/${filter}?limit=${epProps.comment_count}`;
             break;
-        case 'movie':
+        }
+        case 'movie': {
             const movieProps = props as CommentMovieProps;
             endpoint = `movies/${movieProps.movie_slug}/comments/${filter}`;
             break;
-        case 'show':
+        }
+        case 'show': {
             const showProps = props as CommentShowProps;
             endpoint = `shows/${showProps.show_slug}/comments/${filter}`;
             break;
+        }
         default:
             throw new Error('Invalid media type for fetching comments.');
     }
 
-    const uri = `${baseUrl}/${endpoint}`;
-    console.log('Fetching comments from URI:', uri);
+    console.log('Fetching comments from endpoint:', endpoint);
 
-    const response = await fetch(uri, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${access_token}`,
-            'trakt-api-version': '2',
-            'trakt-api-key': clientId,
-        },
-    });
+    try {
+        const response = await traktInstance.get(endpoint, {
+            headers: {
+                Authorization: `Bearer ${access_token}`,
+                'trakt-api-version': '2',
+                'trakt-api-key': clientId,
+            },
+        });
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Error fetching comments: ${response.status} ${errorText}`);
+        return response.data;
+    } catch (error: any) {
+        const errorMessage = error.response?.data || error.message;
+        throw new Error(
+            `Error fetching comments: ${error.response?.status || 'Unknown'} ${errorMessage}`
+        );
     }
-
-    return await response.json();
 };
 
 export const fetchReplies = async (
@@ -57,52 +60,33 @@ export const fetchReplies = async (
     commentId: number
 ) => {
     const access_token = (await getAccessToken()) ?? '';
-    const endpoint = `comments/${commentId}/replies`;
-    const uri = `${baseUrl}/${endpoint}?limit=${replyCount}`;
+    const endpoint = `comments/${commentId}/replies?limit=${replyCount}`;
 
-    console.log('Fetching replies from URI:', uri);
+    console.log('Fetching replies from endpoint:', endpoint);
 
     try {
-        const response = await fetch(uri, {
-            method: 'GET',
+        const response = await traktInstance.get(endpoint, {
             headers: {
-                'Content-Type': 'application/json',
                 Authorization: `Bearer ${access_token}`,
                 'trakt-api-version': '2',
-                'trakt-api-key': clientId, // Added missing trakt-api-key header
+                'trakt-api-key': clientId,
             },
         });
 
-        // Check if response is successful
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Error fetching replies: ${response.status} ${errorText}`);
-        }
-
-        // Check if response has content
-        const contentLength = response.headers.get('content-length');
-        if (contentLength === '0') {
-            console.log('Empty response body, returning empty array');
+        // Axios automatically parses JSON, so we just return the data
+        // If the response is empty, axios will return an empty array or object
+        return response.data || [];
+    } catch (error: any) {
+        // Handle 404 or empty responses gracefully
+        if (error.response?.status === 404 || error.response?.status === 204) {
+            console.log('No replies found, returning empty array');
             return [];
         }
 
-        // Get response text first to check if it's empty
-        const responseText = await response.text();
-        if (!responseText || responseText.trim() === '') {
-            console.log('Empty response body, returning empty array');
-            return [];
-        }
-
-        // Parse JSON only if we have content
-        try {
-            return JSON.parse(responseText);
-        } catch (parseError: any) {
-            console.error('JSON parse error:', parseError);
-            console.error('Response text:', responseText);
-            throw new Error(`Invalid JSON response: ${parseError.message}`);
-        }
-    } catch (error) {
         console.error('Failed to fetch replies:', error);
-        throw error;
+        const errorMessage = error.response?.data || error.message;
+        throw new Error(
+            `Error fetching replies: ${error.response?.status || 'Unknown'} ${errorMessage}`
+        );
     }
 };

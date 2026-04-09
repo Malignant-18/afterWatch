@@ -30,10 +30,7 @@ export default function LandingScreen({ setIsLoggedIn }: LandingProps) {
             if (success) {
                 setIsLoggedIn(true);
             } else {
-                Alert.alert(
-                    'Login Failed',
-                    'The authentication was cancelled or failed. Please try again.'
-                );
+                Alert.alert('The authentication was cancelled or failed. Please try again.');
             }
         } catch (error: any) {
             Alert.alert(

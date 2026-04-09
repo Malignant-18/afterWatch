@@ -1,76 +1,62 @@
 // services/fetchFromTrakt.ts
 
-import { getAccessToken, getTraktUUID } from '../auth/traktAuth';
+import { getAccessToken } from '../auth/traktAuth';
+import traktInstance from '../axios/traktInstance';
 
 export const fetchMovieDetails = async (id: number) => {
-  const access_token: string = (await getAccessToken()) ?? '';
-  //const trakt_uuid: string = (await getTraktUUID()) ?? '';
-  const endpoint = `movies/${id}?extended=images`;
-  const baseUrl = process.env.EXPO_PUBLIC_TRAKT_BASE_URL!;
-  const uri = `${baseUrl}/${endpoint}`;
-  console.log('uri ', uri);
-  const start = performance.now();
+    const access_token: string = (await getAccessToken()) ?? '';
+    const endpoint = `movies/${id}?extended=images`;
 
-  const response = await fetch(uri, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${access_token}`,
-      'trakt-api-version': '2',
-      'trakt-api-key': process.env.EXPO_PUBLIC_CLIENT_ID!,
-    },
-  });
+    console.log('Fetching movie details for id:', id);
+    const start = performance.now();
 
-  const end = performance.now();
-  console.log('duration of fetch from traktapi', Math.round(end - start));
-  const responseJSON = await response.json();
-  console.log('[Redirect] trakt fetch movie ', responseJSON);
-  return responseJSON;
+    const response = await traktInstance.get(endpoint, {
+        headers: {
+            Authorization: `Bearer ${access_token}`,
+            'trakt-api-version': '2',
+            'trakt-api-key': process.env.EXPO_PUBLIC_CLIENT_ID!,
+        },
+    });
+
+    const end = performance.now();
+    console.log('duration of fetch from traktapi', Math.round(end - start));
+    console.log('[Redirect] trakt fetch movie ', response.data);
+    return response.data;
 };
 
 export const fetchEpisodeDetails = async (id: number) => {
-  const access_token: string = (await getAccessToken()) ?? '';
-  //const trakt_uuid: string = (await getTraktUUID()) ?? '';
-  const endpoint = `episodes/${id}?extended=images`;
-  const baseUrl = process.env.EXPO_PUBLIC_TRAKT_BASE_URL!;
-  const uri = `${baseUrl}/${endpoint}`;
-  console.log('uri ', uri);
-  const start = performance.now();
+    const access_token: string = (await getAccessToken()) ?? '';
+    const endpoint = `episodes/${id}?extended=images`;
 
-  const response = await fetch(uri, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${access_token}`,
-      'trakt-api-version': '2',
-      'trakt-api-key': process.env.EXPO_PUBLIC_CLIENT_ID!,
-    },
-  });
+    console.log('Fetching episode details for id:', id);
+    const start = performance.now();
 
-  const end = performance.now();
-  console.log('duration of fetch from traktapi', Math.round(end - start));
-  const responseJSON = await response.json();
-  console.log('[Redirect] trakt fetch episode ', responseJSON);
-  return responseJSON;
+    const response = await traktInstance.get(endpoint, {
+        headers: {
+            Authorization: `Bearer ${access_token}`,
+            'trakt-api-version': '2',
+            'trakt-api-key': process.env.EXPO_PUBLIC_CLIENT_ID!,
+        },
+    });
+
+    const end = performance.now();
+    console.log('duration of fetch from traktapi', Math.round(end - start));
+    console.log('[Redirect] trakt fetch episode ', response.data);
+    return response.data;
 };
 
 export const fetchShowName = async (id: number) => {
-  const access_token: string = (await getAccessToken()) ?? '';
-  //const trakt_uuid: string = (await getTraktUUID()) ?? '';
-  const endpoint = `shows/${id}`;
-  const baseUrl = process.env.EXPO_PUBLIC_TRAKT_BASE_URL!;
-  const uri = `${baseUrl}/${endpoint}`;
-  const response = await fetch(uri, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${access_token}`,
-      'trakt-api-version': '2',
-      'trakt-api-key': process.env.EXPO_PUBLIC_CLIENT_ID!,
-    },
-  });
+    const access_token: string = (await getAccessToken()) ?? '';
+    const endpoint = `shows/${id}`;
 
-  const responseJSON = await response.json();
+    const response = await traktInstance.get(endpoint, {
+        headers: {
+            Authorization: `Bearer ${access_token}`,
+            'trakt-api-version': '2',
+            'trakt-api-key': process.env.EXPO_PUBLIC_CLIENT_ID!,
+        },
+    });
 
-  return responseJSON;
+    console.log('[Redirect] trakt fetch show ', response.data);
+    return response.data;
 };

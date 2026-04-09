@@ -3,28 +3,33 @@
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { RouteProp, useRoute } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { DateTime } from 'luxon';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-    View,
-    Text,
     ActivityIndicator,
-    Image,
     Alert,
     Dimensions,
-    TouchableOpacity,
+    Image,
     ScrollView,
+    StyleSheet, // Keep StyleSheet for the root container
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { SheetManager } from 'react-native-actions-sheet';
+// import { SheetManager } from 'react-native-actions-sheet'; // REMOVED
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
-import { SheetNames } from 'sheet'; // Assuming you have this file defining your sheet names
-import { CommentEpisodeProps } from 'types/comment';
+// import { SheetNames } from 'sheet'; // REMOVED
+import { CommentEpisodeProps } from 'types/comment'; // This is correct
 
 import { fetchBackendEpisode, fetchBackendHistory } from '../../../api/fetchFromBackend';
 import { fetchEpisodeDetails, fetchShowName } from '../../../api/fetchFromTrakt';
+// Import the new CommentSheet and its ref type
+import CommentSheet, { CommentSheetRef } from '../../../components/sheet/CommentSheet';
+// Import the RatingSheet and its Ref type
+import RatingSheet, { RatingSheetRef } from '../../../components/sheet/RatingSheet';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 
 // Define the type for this screen's route prop for type safety
@@ -48,10 +53,14 @@ export default function EpisodeDetail() {
     const [duration, setDuration] = useState<number | null>(null);
     const [history, setHistory] = useState<any>(null);
 
+    // Create refs for both sheets
+    const ratingSheetRef = useRef<RatingSheetRef>(null);
+    const commentSheetRef = useRef<CommentSheetRef>(null);
+
     const screenHeight = Dimensions.get('window').height;
     const imageHeight = screenHeight / 2.2;
 
-    // The useEffect hooks will now re-run correctly when the trakt_id changes
+    // ... all your useEffect hooks are fine ...
     useEffect(() => {
         (async () => {
             const start = Date.now();
@@ -78,6 +87,7 @@ export default function EpisodeDetail() {
             }
         })();
     }, [trakt_id]);
+
     useEffect(() => {
         (async () => {
             try {
@@ -91,6 +101,7 @@ export default function EpisodeDetail() {
             }
         })();
     }, [show_trakt_id]);
+
     useEffect(() => {
         (async () => {
             try {
@@ -116,22 +127,24 @@ export default function EpisodeDetail() {
         );
     }
 
-    const showRatingSheet = async () => {
-        // Corrected: The second argument is the options object itself.
-        const result: any = await SheetManager.show(SheetNames.ratingSheet, {
-            payload: {
-                trakt_id,
-                type: 'episode',
-                title: episodeData?.title || 'Unknown Title',
-            } as any,
-        });
-        // The result comes from the SheetManager.hide() payload
+    const showRatingSheet = () => {
+        console.log('📺 [EpisodeDetail] Opening rating sheet via ref');
+        ratingSheetRef.current?.open();
+    };
+
+    const handleRatingSheetClose = (result?: {
+        success: boolean;
+        rating: number;
+        message?: string;
+    }) => {
+        console.log('📺 [EpisodeDetail] Rating sheet closed. Result:', result);
         if (result?.success) {
             showToast();
         }
     };
 
-    const showCommentSheet = async () => {
+    // UPDATED: This now uses the ref to open the CommentSheet
+    const showCommentSheet = () => {
         const details: CommentEpisodeProps = {
             filter: ' likes',
             show_trakt_id: show_trakt_id ?? 0,
@@ -140,13 +153,20 @@ export default function EpisodeDetail() {
             episode: episodeData?.number ?? 0,
             comment_count: backendData?.comment_count ?? null,
         };
-        console.log('props: ', details);
-        await SheetManager.show(SheetNames.CommentSheet, {
-            payload: {
-                type: 'episode',
-                commentProps: details,
-            } as any,
-        });
+
+        // This is the payload structure your new CommentSheet expects
+        const payload = {
+            type: 'episode' as const,
+            commentProps: details,
+        };
+
+        console.log('💬 [EpisodeDetail] Opening comment sheet with payload');
+        commentSheetRef.current?.open(payload);
+    };
+
+    // NEW: Handler for when the comment sheet closes
+    const handleCommentSheetClose = () => {
+        console.log('💬 [EpisodeDetail] Comment sheet closed.');
     };
 
     const showToast = () => {
@@ -163,122 +183,138 @@ export default function EpisodeDetail() {
         return DateTime.fromISO(isoDate).toFormat(format);
     };
     return (
+        // Use the StyleSheet for the root container to ensure sheets render correctly
         <View className="flex-1 bg-light-200">
-            <StatusBar translucent backgroundColor="transparent" style="light" />
-            <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-                <View className="relative w-full" style={{ height: imageHeight }}>
-                    {getImageUri() ? (
-                        <Image
-                            source={{ uri: getImageUri() }}
-                            className="absolute h-full w-full"
-                            resizeMode="cover"
-                        />
-                    ) : (
-                        <View className="h-full w-full items-center justify-center bg-gray-700">
-                            <Text className="text-gray-400">No image available</Text>
-                        </View>
-                    )}
-                </View>
-
-                <SafeAreaView className="-mt-10 mb-6 w-full flex-1 rounded-t-3xl bg-light-200 px-6">
-                    <Text className="pt-2 font-montserrat-semibold text-3xl  text-gray-900">
-                        {episodeData?.title || 'Unknown Title'}
-                    </Text>
-                    <Text className="text-md px-1 py-[1px] font-nexa-book font-semibold text-dark-400">
-                        Season {episodeData?.season || '-'} • Episode {episodeData?.number || '-'}
-                    </Text>
-                    <Text className=" mb-1 mt-3 font-nexa-bold text-[15px] text-gray-700">
-                        {showName?.title}
-                    </Text>
-                    <View className="mt-4 flex-row gap-7">
-                        <View className=" flex-row items-center  gap-1 rounded-xl ">
-                            <Ionicons name="calendar-outline" size={12} color={color} />
-                            <Text className="font-montserrat  text-sm text-gray-800">
-                                {formatDate(backendData?.first_aired, 'dd LLL yyyy')}
-                            </Text>
-                        </View>
-                        <View className=" flex-row items-center  gap-1 rounded-xl ">
-                            <Feather name="clock" size={12} color={color} />
-                            <Text className="font-montserrat  text-sm text-gray-800">
-                                {backendData?.runtime} mins
-                            </Text>
-                        </View>
-                    </View>
-                    <View className="mt-6 ">
-                        <Text className="font-montserrat text-lg text-dark-900">Synopsis</Text>
-                        <Text className="mt-2 font-montserrat text-base leading-6 text-dark-600">
-                            {backendData?.overview ||
-                                episodeData?.overview ||
-                                'No synopsis available.'}
-                        </Text>
+            <View className="flex-1 bg-light-200">
+                <StatusBar translucent backgroundColor="transparent" style="light" />
+                <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+                    <View className="relative w-full" style={{ height: imageHeight }}>
+                        {getImageUri() ? (
+                            <Image
+                                source={{ uri: getImageUri() }}
+                                className="absolute h-full w-full"
+                                resizeMode="cover"
+                            />
+                        ) : (
+                            <View className="h-full w-full items-center justify-center bg-gray-700">
+                                <Text className="text-gray-400">No image available</Text>
+                            </View>
+                        )}
                     </View>
 
-                    <View className="mb-4 mt-4 overflow-hidden  bg-light-200">
-                        <Text className="flex-row items-center py-3 font-montserrat text-lg text-dark-900">
-                            Watch History
+                    <SafeAreaView className="-mt-10 mb-6 w-full flex-1 rounded-t-3xl bg-light-200 px-6">
+                        <Text className="pt-2 font-montserrat-semibold text-3xl  text-gray-900">
+                            {episodeData?.title || 'Unknown Title'}
                         </Text>
-                        <View>
-                            {history ? (
-                                history.map((item: any, index: any) => (
-                                    <View
-                                        key={index}
-                                        className={`flex-row items-center justify-between p-4 ${
-                                            index % 2 === 0 ? 'bg-light-250' : 'bg-light-200'
-                                        }`}>
-                                        <View className="flex-row items-center justify-between gap-8">
-                                            <MaterialCommunityIcons
-                                                name="movie-play-outline"
-                                                size={20}
-                                                color="#6b7280"
-                                            />
-                                            <Text className="pr-4 font-nexa-book text-sm text-dark-600">
-                                                {formatDate(item.watched_at, 'ff')}
-                                            </Text>
+                        <Text className="text-md px-1 py-[1px] font-nexa-book font-semibold text-dark-400">
+                            Season {episodeData?.season || '-'} • Episode{' '}
+                            {episodeData?.number || '-'}
+                        </Text>
+                        <Text className=" mb-1 mt-3 font-nexa-bold text-[15px] text-gray-700">
+                            {showName?.title}
+                        </Text>
+                        <View className="mt-4 flex-row gap-7">
+                            <View className=" flex-row items-center  gap-1 rounded-xl ">
+                                <Ionicons name="calendar-outline" size={12} color={color} />
+                                <Text className="font-montserrat  text-sm text-gray-800">
+                                    {formatDate(backendData?.first_aired, 'dd LLL yyyy')}
+                                </Text>
+                            </View>
+                            <View className=" flex-row items-center  gap-1 rounded-xl ">
+                                <Feather name="clock" size={12} color={color} />
+                                <Text className="font-montserrat  text-sm text-gray-800">
+                                    {backendData?.runtime} mins
+                                </Text>
+                            </View>
+                        </View>
+                        <View className="mt-6 ">
+                            <Text className="font-montserrat text-lg text-dark-900">Synopsis</Text>
+                            <Text className="mt-2 font-montserrat text-base leading-6 text-dark-600">
+                                {backendData?.overview ||
+                                    episodeData?.overview ||
+                                    'No synopsis available.'}
+                            </Text>
+                        </View>
+
+                        <View className="mb-4 mt-4 overflow-hidden  bg-light-200">
+                            <Text className="flex-row items-center py-3 font-montserrat text-lg text-dark-900">
+                                Watch History
+                            </Text>
+                            <View>
+                                {history ? (
+                                    history.map((item: any, index: any) => (
+                                        <View
+                                            key={index}
+                                            className={`flex-row items-center justify-between p-4 ${
+                                                index % 2 === 0 ? 'bg-light-250' : 'bg-light-200'
+                                            }`}>
+                                            <View className="flex-row items-center justify-between gap-8">
+                                                <MaterialCommunityIcons
+                                                    name="movie-play-outline"
+                                                    size={20}
+                                                    color="#6b7280"
+                                                />
+                                                <Text className="pr-4 font-nexa-book text-sm text-dark-600">
+                                                    {formatDate(item.watched_at, 'ff')}
+                                                </Text>
+                                            </View>
                                         </View>
+                                    ))
+                                ) : (
+                                    <View className="p-4">
+                                        <Text className="text-sm text-gray-500">
+                                            No watch history available.
+                                        </Text>
                                     </View>
-                                ))
-                            ) : (
-                                <View className="p-4">
-                                    <Text className="text-sm text-gray-500">
-                                        No watch history available.
-                                    </Text>
-                                </View>
-                            )}
-                        </View>
-                    </View>
-
-                    <View className="mt-4  flex-row justify-around gap-4 pr-12">
-                        <View className="items-start  pt-1">
-                            <Text className="pt-4 font-nexa-bold text-3xl text-dark-900">
-                                {backendData?.rating?.toFixed(1) ?? '–'}/
-                                <Text className="text-xl font-normal text-gray-600">10</Text>
-                            </Text>
-                            <Text className="font-montserrat text-sm text-gray-400">
-                                {backendData?.votes?.toLocaleString() ?? '–'} votes
-                            </Text>
+                                )}
+                            </View>
                         </View>
 
+                        <View className="mt-4  flex-row justify-around gap-4 pr-12">
+                            <View className="items-start  pt-1">
+                                <Text className="pt-4 font-nexa-bold text-3xl text-dark-900">
+                                    {backendData?.rating?.toFixed(1) ?? '–'}/
+                                    <Text className="text-xl font-normal text-gray-600">10</Text>
+                                </Text>
+                                <Text className="font-montserrat text-sm text-gray-400">
+                                    {backendData?.votes?.toLocaleString() ?? '–'} votes
+                                </Text>
+                            </View>
+
+                            <TouchableOpacity
+                                onPress={showRatingSheet}
+                                className={`mt-2 h-12 w-20 items-center justify-center rounded-xl border-2 border-dark-600 bg-light-200 `}>
+                                <Text className="font-nexa-bold text-lg text-dark-600">Rate</Text>
+                            </TouchableOpacity>
+                        </View>
                         <TouchableOpacity
-                            onPress={showRatingSheet}
-                            className={`mt-2 h-12 w-20 items-center justify-center rounded-xl border-2 border-dark-600 bg-light-200 `}>
-                            <Text className="font-nexa-bold text-lg text-dark-600">Rate</Text>
+                            onPress={showCommentSheet}
+                            className="mt-8 h-12 w-full items-center justify-center ">
+                            <Text className="font-nexa-bold text-lg text-dark-600">Comments</Text>
+                            <Text className="font-nexa-book text-gray-400 ">
+                                View {backendData?.comment_count ?? 'all'} comments
+                            </Text>
                         </TouchableOpacity>
-                    </View>
-                    <TouchableOpacity
-                        onPress={showCommentSheet}
-                        className="mt-8 h-12 w-full items-center justify-center ">
-                        <Text className="font-nexa-bold text-lg text-dark-600">Comments</Text>
-                        <Text className="font-nexa-book text-gray-400 ">
-                            View {backendData?.comment_count ?? 'all'} comments
-                        </Text>
-                    </TouchableOpacity>
-                    {!duration && (
-                        <Text className="mt-6 text-center text-xs text-gray-400">
-                            Trakt API fetch took {duration} ms
-                        </Text>
-                    )}
-                </SafeAreaView>
-            </ScrollView>
+                        {!duration && (
+                            <Text className="mt-6 text-center text-xs text-gray-400">
+                                Trakt API fetch took {duration} ms
+                            </Text>
+                        )}
+                    </SafeAreaView>
+                </ScrollView>
+            </View>
+
+            {/* Rating Sheet - Outside ScrollView */}
+            <RatingSheet
+                ref={ratingSheetRef} // Pass the ref
+                onClose={handleRatingSheetClose}
+                trakt_id={trakt_id}
+                type="episode"
+                title={episodeData?.title || 'Unknown Episode'}
+            />
+
+            {/* NEW: Comment Sheet - Outside ScrollView */}
+            <CommentSheet ref={commentSheetRef} onClose={handleCommentSheetClose} />
         </View>
     );
 }

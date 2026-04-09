@@ -11,18 +11,19 @@ import {
     SafeAreaView,
     TouchableOpacity,
     ActivityIndicator,
+    StyleSheet,
 } from 'react-native';
 
 // --- Configuration ---
 const BACKEND_URL = 'http://192.168.29.130:5000/api/trial';
 
-// --- Helper Components (defined in the same file) ---
+// --- Helper Components ---
 
 type ActionButtonProps = {
     onPress: () => void;
     title: string;
     iconName: keyof typeof Feather.glyphMap;
-    color: string; // e.g., 'bg-blue-600'
+    color: string;
     isLoading?: boolean;
 };
 
@@ -71,7 +72,7 @@ const Profile = () => {
                     title: 'Test Notification ✨',
                     body: 'This is a sample local notification from the app!',
                 },
-                trigger: null, // sends immediately
+                trigger: null,
             });
             setStatus({ message: 'Test notification sent successfully.', type: 'success' });
         } catch (error) {
@@ -113,45 +114,56 @@ const Profile = () => {
     }, []);
 
     return (
-        <SafeAreaView className="flex-1 bg-dark-100">
-            <ScrollView className="px-5 py-8" contentContainerStyle={{ paddingBottom: 30 }}>
-                {/* Header */}
-                <View className="mb-8 flex-row items-center justify-center">
-                    <Feather name="user" size={28} color="white" />
-                    <Text className="ml-3 text-3xl font-bold text-white">Profile</Text>
-                </View>
+        <View style={styles.container}>
+            <SafeAreaView className="flex-1 bg-dark-100">
+                <ScrollView contentContainerStyle={styles.scrollView}>
+                    {/* Header */}
+                    <View className="mb-8 flex-row items-center justify-center">
+                        <Feather name="user" size={28} color="white" />
+                        <Text className="ml-3 text-3xl font-bold text-white">Profile</Text>
+                    </View>
 
-                {/* Status Message Area */}
-                {status && <StatusMessage message={status.message} type={status.type} />}
+                    {/* Status Message Area */}
+                    {status && <StatusMessage message={status.message} type={status.type} />}
 
-                {/* Actions Section */}
-                <View className="mt-6 space-y-4 rounded-2xl bg-dark-200 p-4">
-                    <Text className="mb-2 text-lg font-semibold text-gray-300">
-                        Settings & Actions
-                    </Text>
-                    <ActionButton
-                        onPress={handleSendNotification}
-                        title="Send Test Notification"
-                        iconName="bell"
-                        color="bg-blue-600"
-                    />
-                    <ActionButton
-                        onPress={handleFetchTraktData}
-                        title="Sync Trakt Data"
-                        iconName="refresh-cw"
-                        color="bg-green-600"
-                        isLoading={isLoading}
-                    />
-                </View>
+                    {/* Actions Section */}
+                    <View className="mt-6 space-y-4 rounded-2xl bg-dark-200 p-4">
+                        <Text className="mb-2 text-lg font-semibold text-gray-300">
+                            Settings & Actions
+                        </Text>
+                        <ActionButton
+                            onPress={handleSendNotification}
+                            title="Send Test Notification"
+                            iconName="bell"
+                            color="bg-blue-600"
+                        />
+                        <ActionButton
+                            onPress={handleFetchTraktData}
+                            title="Sync Trakt Data"
+                            iconName="refresh-cw"
+                            color="bg-green-600"
+                            isLoading={isLoading}
+                        />
+                    </View>
 
-                {/* Heatmap Section */}
-                <View className="mt-8 rounded-2xl bg-dark-200 p-4 shadow">
-                    <Text className="mb-3 text-lg font-semibold text-white">Activity Heatmap</Text>
-                    <HeatMap />
-                </View>
-            </ScrollView>
-        </SafeAreaView>
+                    {/* Heatmap Section */}
+                    <View className="mt-8 rounded-2xl bg-dark-200 shadow">
+                        <Text className="mb-3 px-4 pt-4 text-lg font-semibold text-white">
+                            Activity Heatmap
+                        </Text>
+                        <HeatMap />
+                    </View>
+                </ScrollView>
+            </SafeAreaView>
+        </View>
     );
 };
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    scrollView: {},
+});
 
 export default Profile;

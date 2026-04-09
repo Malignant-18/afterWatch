@@ -110,7 +110,7 @@ export const CommentItem = ({ item, isReply = false, parentCommentId }: CommentI
 
     // --- 2. UPDATE THE LIKE HANDLER ---
     const handleLikeToggle = async (commentId: number) => {
-        const trakt_uuid = '3cb06afae6d4bac05d951e3e6895d4650d6e369c';
+        const trakt_uuid = await getTraktUUID();
         const access_token = await getAccessToken();
         const originalLikedState = isLiked;
         const originalLikeCount = likeCount;
